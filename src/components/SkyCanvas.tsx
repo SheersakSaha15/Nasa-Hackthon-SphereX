@@ -120,7 +120,7 @@ export const SkyCanvas: React.FC<SkyCanvasProps> = ({
   useEffect(() => {
     let isCancelled = false;
     const tierKey = isWide ? 'wide' : `ps${currentPixscale}`;
-    const cacheKey = `${target.id}_${tierKey}_${inverted ? 'inv' : 'norm'}`;
+    const cacheKey = `${target.id}_${tierKey}_${inverted ? 'inv' : 'norm'}_b${detectorBand}`;
     const targetBaseFovArcsec = isWide ? 3600 : currentPixscale * 512;
 
     // Check if this resolution tier is already compiled in memory
@@ -181,14 +181,42 @@ export const SkyCanvas: React.FC<SkyCanvasProps> = ({
             // Draw the actual authentic NASA image scaled to the canvas
             ctx.drawImage(img, 0, 0, CANVAS_SIZE, CANVAS_SIZE);
 
-            // If Astronomer Negative mode is enabled, invert pixels
-            if (inverted) {
+            // Apply Infrared Detector Bandpass Filter and Inversion
+            if (inverted || detectorBand !== 0) {
               const imgData = ctx.getImageData(0, 0, CANVAS_SIZE, CANVAS_SIZE);
               const d = imgData.data;
               for (let i = 0; i < d.length; i += 4) {
-                d[i] = 255 - d[i];         // R
-                d[i + 1] = 255 - d[i + 1]; // G
-                d[i + 2] = 255 - d[i + 2]; // B
+                let r = d[i];
+                let g = d[i + 1];
+                let b = d[i + 2];
+
+                // Real-time SPHEREx detector bandpass color response
+                if (detectorBand === 1) {
+                  // Detectors 1 & 2 (0.75 - 1.86 µm): Near-IR Optical (warm amber tone)
+                  r = Math.min(255, r * 1.18);
+                  g = Math.min(255, g * 1.05);
+                  b = b * 0.72;
+                } else if (detectorBand === 2) {
+                  // Detectors 3 & 4 (1.86 - 3.82 µm): Water & CO2 Ice (crisp cyan-ice tone)
+                  r = r * 0.68;
+                  g = Math.min(255, g * 1.12);
+                  b = Math.min(255, b * 1.28);
+                } else if (detectorBand === 3) {
+                  // Detectors 5 & 6 (3.82 - 5.00 µm): Cold Brown Dwarfs & CH4 (deep thermal crimson tone)
+                  r = Math.min(255, r * 1.35);
+                  g = g * 0.68;
+                  b = b * 0.55;
+                }
+
+                if (inverted) {
+                  r = 255 - r;
+                  g = 255 - g;
+                  b = 255 - b;
+                }
+
+                d[i] = r;
+                d[i + 1] = g;
+                d[i + 2] = b;
               }
               ctx.putImageData(imgData, 0, 0);
             }
@@ -461,12 +489,26 @@ export const SkyCanvas: React.FC<SkyCanvasProps> = ({
 
     // Overlay Authentic Mission Tag on HUD (Bottom-Right)
     const epochYear = currentEpoch === 0 ? '2015' : currentEpoch === 1 ? '2017' : '2020';
-    ctx.fillStyle = inverted ? 'rgba(0,0,0,0.7)' : 'rgba(11, 61, 145, 0.85)';
-    ctx.fillRect(canvas.width - 200, canvas.height - 28, 185, 20);
-    ctx.fillStyle = '#ffffff';
+    const bandLabel = detectorBand === 1 
+      ? 'Det 1-2 (0.75-1.86µm)' 
+      : detectorBand === 2 
+      ? 'Det 3-4 (1.86-3.82µm)' 
+      : detectorBand === 3 
+      ? 'Det 5-6 (3.82-5.00µm)' 
+      : 'All Bands (0.75-5.00µm)';
+
+    ctx.fillStyle = inverted ? 'rgba(0,0,0,0.85)' : 'rgba(7, 9, 14, 0.9)';
+    ctx.strokeStyle = 'rgba(56, 189, 248, 0.3)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.roundRect(canvas.width - 275, canvas.height - 34, 260, 24, 6);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.fillStyle = '#38bdf8';
     ctx.font = 'bold 9px ui-monospace, monospace';
-    ctx.fillText(`NASA unWISE • Epoch ${currentEpoch + 1} (${epochYear})`, canvas.width - 192, canvas.height - 15);
-  }, [currentEpoch, viewMode, zoom, pan, showMotionVector, target, currentPixscale, isWide, fovArcmin, inverted]);
+    ctx.fillText(`NASA unWISE [${bandLabel}] • Ep ${currentEpoch + 1} (${epochYear})`, canvas.width - 268, canvas.height - 18);
+  }, [currentEpoch, viewMode, zoom, pan, showMotionVector, target, currentPixscale, isWide, fovArcmin, inverted, detectorBand]);
 
   useEffect(() => {
     drawMainCanvas();
