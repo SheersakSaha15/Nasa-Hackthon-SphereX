@@ -146,7 +146,11 @@ export const App: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col h-screen w-screen bg-[#08090C] text-zinc-100 overflow-hidden font-sans">
+    <div className="flex flex-col h-screen w-screen bg-[#06070a] text-zinc-100 overflow-hidden font-sans relative selection:bg-cyan-500/30 selection:text-cyan-200">
+      {/* Ambient Deep Space Atmospheric Radial Glows */}
+      <div className="pointer-events-none absolute -top-40 left-1/3 w-[600px] h-[350px] bg-blue-600/[0.07] rounded-full blur-[120px] -z-10" />
+      <div className="pointer-events-none absolute -bottom-32 right-1/4 w-[500px] h-[300px] bg-cyan-500/[0.05] rounded-full blur-[100px] -z-10" />
+
       {/* 1. Header */}
       <Header
         onOpenHelp={() => setIsHelpOpen(true)}
@@ -181,7 +185,7 @@ export const App: React.FC = () => {
         />
 
         {/* Center Canvas & Media Controls */}
-        <div className="flex-1 flex flex-col h-full overflow-hidden bg-[#08090C]">
+        <div className="flex-1 flex flex-col h-full overflow-hidden bg-[#06070a]/95 relative">
           {/* 2D Canvas Area */}
           <div className="flex-1 relative overflow-hidden flex items-center justify-center">
             <SkyCanvas

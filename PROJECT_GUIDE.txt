@@ -1,0 +1,91 @@
+SPHEREx SkyBlink: Project & Website Guide
+NASA Space Apps Challenge 2026: Planet X and SPHEREx
+=====================================================
+
+1. EXECUTIVE SUMMARY & PROBLEM STATEMENT
+-----------------------------------------
+• The Mystery of Planet X / Planet Nine:
+  In the outer solar system beyond Neptune, several icy bodies orbit in strange, clustered alignments. Astronomers hypothesize a massive, undiscovered planet ("Planet X") is gravitationally pulling them. Because it orbits so far away, it reflects almost zero visible sunlight, making it invisible to standard optical telescopes.
+
+• NASA's SPHEREx Mission:
+  SPHEREx is a NASA space observatory designed to map the entire sky in 102 distinct near-infrared wavelengths every six months. Cold celestial objects glow faintly in the infrared, making SPHEREx ideal for detecting cold brown dwarfs, outer solar system bodies, and Planet X.
+
+• Our Solution (SPHEREx SkyBlink):
+  An interactive web platform that modernizes the historic "Blink Comparator" technique (used to discover Pluto in 1930) with multi-epoch infrared space data and 102-band spectroscopy, allowing anyone to detect and verify moving astronomical objects.
+
+
+2. THE CORE SCIENTIFIC PRINCIPLE: BLINK COMPARATOR
+---------------------------------------------------
+• How it works:
+  Take two photos of the same part of the sky taken months or years apart (Epoch 1 and Epoch 2).
+  Rapidly alternate between them at 2 to 3 times per second (2-3 Hz).
+  - Fixed distant stars stay completely motionless.
+  - Moving objects (nearby stars, brown dwarfs, Planet X candidates) jump back and forth!
+
+• History:
+  In 1930, 24-year-old Clyde Tombaugh discovered Pluto using this exact mechanical technique with photographic glass plates. SkyBlink brings this into the browser with modern satellite data.
+
+
+3. WALKTHROUGH OF EVERY FEATURE ON THE WEBSITE
+-----------------------------------------------
+
+A. Top Header
+• Title & Challenge Badge: Shows "SPHEREx SkyBlink" and the NASA Space Apps 2026 challenge.
+• Coordinate Readout: Displays current Right Ascension (RA) and Declination (Dec).
+• Share Link: Generates a direct URL that preserves your target, zoom level, and settings.
+
+B. Left Sidebar (Target Deck)
+• Barnard's Star: Fastest-moving star in our sky (10.3 arcsec/year). Great demo for seeing clear motion.
+• Luhman 16: Nearest binary brown dwarf system (6.5 light-years away). Faint in visible light, bright in infrared.
+• Proxima Centauri: Nearest star to our Sun (4.2 light-years away), shows rapid motion across epochs.
+• Planet X Candidate Field: Simulated outer solar system moving body blinking against distant stars.
+• Variable & Transiting Stars: Objects that stay in one spot but pulse or dim dramatically over time.
+• Custom RA/Dec Search: Enter any astronomical coordinates to query real NASA infrared cutouts.
+
+C. Center Screen (The Sky Canvas)
+• Infrared Space Viewport: Displays real mid-infrared data from space missions.
+• NASA Viewfinder Reticles: Corner crosshairs framing the celestial target.
+• Continuous Zoom (5' to 60' arcminutes): Smooth optical zoom from 1 degree wide down to a 5-arcminute close-up without loading pauses.
+• Brightness & Contrast: Sliders to reveal faint objects hidden in space dust.
+• Invert Colors: Switches between black sky and white background (standard method used by astronomers to spot faint contrast differences).
+• Colormaps: Toggle between Grayscale, High-Contrast Heat, and Cold-IR palettes.
+• Fullscreen Mode: Expands the sky view to fill the entire screen for planet hunting.
+
+D. Blink & Analysis Controls (Under the Canvas)
+• Play / Pause: Starts or stops the rapid alternating between Epoch 1 and Epoch 2.
+• Blink Speed Slider: Adjusts animation speed from 0.5 Hz to 5.0 Hz (2-3 Hz is optimal).
+• Manual Step: Lets you flip back and forth between Epoch 1 and Epoch 2 one frame at a time.
+• Difference Image Mode: Calculates (Epoch 2 - Epoch 1). Static stars subtract to black (0 - 0 = 0). Anything that moved leaves a distinct bright/dark "dipole" pair, mathematically proving motion.
+
+E. Bottom Titanium Drawer (SPHEREx 102-Band Inspector)
+• 102-Band SED Graph: While normal cameras see 3 colors (RGB), SPHEREx splits infrared light into 102 narrow slices between 0.75 and 5.0 micrometers.
+• Molecular Absorption Fingerprints:
+  - Water Ice (H2O at 3.05 µm): Indicates icy surfaces on outer solar system bodies.
+  - Methane (CH4 at 1.66 µm & 2.3 µm): Signature of cold gas giants, Planet X candidates, and T-type brown dwarfs.
+  - Carbon Dioxide Ice (CO2 at 4.27 µm): Primordial cometary ice.
+• NASA FITS Download: Direct link to download raw scientific FITS files.
+• NASA WiseView Link: Direct button to open the target in WiseView for external verification.
+
+F. Candidate Confirmation
+• "Confirm Motion" / "Log Candidate": Calculates the angular motion vector and speed in milliarcseconds per year, celebrates with discovery confetti, and saves the candidate.
+
+
+4. TECHNICAL ARCHITECTURE
+--------------------------
+• Frontend: React 19 + TypeScript + Vite (lightning fast, pure client-side).
+• Styling: Tailwind CSS (modern obsidian-space theme).
+• Canvas Engine: HTML5 2D Canvas (60 FPS real-time blinking and mathematical pixel subtraction).
+• Data: Real NASA IRSA/unWISE multi-epoch infrared archives.
+• Hosting: 100% serverless on Vercel CDN (zero backend server or database needed).
+
+
+5. CHEAT SHEET: QUESTIONS JUDGES MIGHT ASK
+-------------------------------------------
+Q: Is this real NASA data?
+A: Yes, real infrared sky cutouts from NASA's unWISE / NEOWISE missions, matching the infrared wavelengths of SPHEREx. The 102 spectral channels accurately model SPHEREx's linear variable filter spectrometers.
+
+Q: Why a human blink comparator instead of AI?
+A: AI algorithms suffer from high false-positive rates on cosmic ray hits and telescope artifacts. Major discoveries like Backyard Worlds: Planet 9 rely on human visual verification paired with difference imaging.
+
+Q: How does this help find Planet X?
+A: Planet X is too cold and far to reflect visible light, but glows in thermal infrared. By blinking multi-epoch infrared surveys and verifying methane absorption at 1.66 and 2.3 microns, SkyBlink provides the exact verification pipeline needed to confirm candidates.

@@ -543,15 +543,18 @@ export const SkyCanvas: React.FC<SkyCanvasProps> = ({
     <div 
       ref={containerRef}
       className={`relative w-full h-full flex flex-col items-center justify-center p-2 sm:p-4 select-none overflow-hidden ${
-        isFullscreen ? 'fixed inset-0 z-50 bg-black' : 'bg-[#08090C]'
+        isFullscreen ? 'fixed inset-0 z-50 bg-black' : 'bg-transparent'
       }`}
     >
       {/* Top Banner Status Bar */}
       <div className="absolute top-3 left-4 right-4 flex items-center justify-between z-10 pointer-events-none">
-        <div className="bg-black/75 backdrop-blur-md px-3 py-1.5 rounded-md border border-white/10 text-xs font-mono flex items-center gap-2 pointer-events-auto shadow-md">
-          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-          <span className="text-zinc-300 flex items-center gap-1.5">
-            <span className="text-white font-semibold">NASA unWISE:</span>
+        <div className="bg-[#07090e]/90 backdrop-blur-xl px-3.5 py-1.5 rounded-lg border border-white/15 text-xs font-mono flex items-center gap-2 pointer-events-auto shadow-[0_4px_24px_rgba(0,0,0,0.7)]">
+          <span className="relative flex h-2 w-2">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-400 shadow-[0_0_8px_#34d399]"></span>
+          </span>
+          <span className="text-zinc-200 flex items-center gap-1.5">
+            <span className="text-white font-bold tracking-tight">NASA unWISE:</span>
             {viewMode === 'blink' && `Epoch ${currentEpoch + 1} (${epochYears[currentEpoch]})`}
             {viewMode === 'difference' && 'Difference Subtraction (2017 - 2015)'}
             {viewMode === 'coadd' && 'Co-added Summation (2015 + 2017)'}
@@ -559,32 +562,32 @@ export const SkyCanvas: React.FC<SkyCanvasProps> = ({
         </div>
 
         {/* Zoom & Fullscreen Controls */}
-        <div className="flex items-center space-x-1 bg-black/75 backdrop-blur-md p-1 rounded-md border border-white/10 pointer-events-auto shadow-md">
+        <div className="flex items-center space-x-1 bg-[#07090e]/90 backdrop-blur-xl p-1 rounded-lg border border-white/15 pointer-events-auto shadow-[0_4px_24px_rgba(0,0,0,0.7)]">
           <button
             onClick={() => setZoom((z) => Math.min(5, z * 1.25))}
-            className="p-1.5 hover:bg-white/10 rounded text-zinc-400 hover:text-white transition-colors"
+            className="p-1.5 hover:bg-white/10 hover:text-cyan-300 rounded text-zinc-400 transition-colors"
             title="Magnify Pixels (Zoom In)"
           >
             <ZoomIn className="w-3.5 h-3.5" />
           </button>
           <button
             onClick={() => setZoom((z) => Math.max(0.5, z * 0.8))}
-            className="p-1.5 hover:bg-white/10 rounded text-zinc-400 hover:text-white transition-colors"
+            className="p-1.5 hover:bg-white/10 hover:text-cyan-300 rounded text-zinc-400 transition-colors"
             title="Demagnify Pixels (Zoom Out)"
           >
             <ZoomOut className="w-3.5 h-3.5" />
           </button>
           <button
             onClick={resetPanZoom}
-            className="p-1.5 hover:bg-white/10 rounded text-zinc-400 hover:text-white transition-colors"
+            className="p-1.5 hover:bg-white/10 hover:text-cyan-300 rounded text-zinc-400 transition-colors"
             title="Reset Pan & Zoom"
           >
             <RotateCcw className="w-3.5 h-3.5" />
           </button>
-          <div className="w-[1px] h-4 bg-white/10 mx-0.5" />
+          <div className="w-[1px] h-4 bg-white/15 mx-0.5" />
           <button
             onClick={toggleFullscreen}
-            className="p-1.5 hover:bg-white/10 rounded text-zinc-400 hover:text-white transition-colors"
+            className="p-1.5 hover:bg-white/10 hover:text-cyan-300 rounded text-zinc-400 transition-colors"
             title={isFullscreen ? "Exit Fullscreen" : "Fullscreen View"}
           >
             {isFullscreen ? <Minimize className="w-3.5 h-3.5" /> : <Maximize className="w-3.5 h-3.5" />}
@@ -593,19 +596,19 @@ export const SkyCanvas: React.FC<SkyCanvasProps> = ({
       </div>
 
       {/* Main Large Celestial Screen Container */}
-      <div className={`relative border border-white/[0.12] rounded-xl overflow-hidden shadow-2xl bg-black flex items-center justify-center cursor-crosshair transition-all ${
+      <div className={`relative border border-white/20 rounded-2xl overflow-hidden shadow-[0_0_50px_rgba(6,182,212,0.15),0_0_100px_rgba(30,58,138,0.22),0_25px_50px_-12px_rgba(0,0,0,0.9)] bg-black flex items-center justify-center cursor-crosshair transition-all ${
         isFullscreen ? 'w-screen h-screen max-w-none max-h-none rounded-none border-0' : 'w-full max-w-[850px] max-h-[calc(100vh-130px)] aspect-square'
       }`}>
         {/* Subtle Viewfinder Reticle Corners */}
-        <div className="absolute top-2.5 left-2.5 w-3.5 h-3.5 border-t border-l border-white/30 pointer-events-none z-10" />
-        <div className="absolute top-2.5 right-2.5 w-3.5 h-3.5 border-t border-r border-white/30 pointer-events-none z-10" />
-        <div className="absolute bottom-2.5 left-2.5 w-3.5 h-3.5 border-b border-l border-white/30 pointer-events-none z-10" />
-        <div className="absolute bottom-2.5 right-2.5 w-3.5 h-3.5 border-b border-r border-white/30 pointer-events-none z-10" />
+        <div className="absolute top-3 left-3 w-4 h-4 border-t-2 border-l-2 border-cyan-400/80 pointer-events-none z-10 shadow-[0_0_8px_rgba(34,211,238,0.7)]" />
+        <div className="absolute top-3 right-3 w-4 h-4 border-t-2 border-r-2 border-cyan-400/80 pointer-events-none z-10 shadow-[0_0_8px_rgba(34,211,238,0.7)]" />
+        <div className="absolute bottom-3 left-3 w-4 h-4 border-b-2 border-l-2 border-cyan-400/80 pointer-events-none z-10 shadow-[0_0_8px_rgba(34,211,238,0.7)]" />
+        <div className="absolute bottom-3 right-3 w-4 h-4 border-b-2 border-r-2 border-cyan-400/80 pointer-events-none z-10 shadow-[0_0_8px_rgba(34,211,238,0.7)]" />
 
         {loading && (
-          <div className="absolute inset-0 bg-black/80 backdrop-blur-sm z-20 flex flex-col items-center justify-center space-y-2">
-            <Loader2 className="w-7 h-7 text-blue-400 animate-spin" />
-            <span className="text-xs text-zinc-300 font-mono">Streaming NASA cutouts...</span>
+          <div className="absolute inset-0 bg-black/80 backdrop-blur-md z-20 flex flex-col items-center justify-center space-y-2">
+            <Loader2 className="w-8 h-8 text-cyan-400 animate-spin drop-shadow-[0_0_8px_rgba(34,211,238,0.8)]" />
+            <span className="text-xs text-cyan-200 font-mono tracking-wide">Streaming NASA infrared cutouts...</span>
           </div>
         )}
 
@@ -624,14 +627,15 @@ export const SkyCanvas: React.FC<SkyCanvasProps> = ({
 
         {/* Live Coordinate Reticle Info in Bottom Left */}
         {hoverCoords && (
-          <div className="absolute bottom-3 left-3 bg-black/75 backdrop-blur-md px-2.5 py-1 rounded text-[10px] font-mono text-zinc-300 border border-white/10 pointer-events-none">
-            RA: {hoverCoords.raStr} | Dec: {hoverCoords.decStr}
+          <div className="absolute bottom-3 left-3 bg-[#07090e]/90 backdrop-blur-xl px-3 py-1.5 rounded-lg text-[10px] font-mono text-cyan-200 border border-cyan-500/30 pointer-events-none shadow-[0_0_16px_rgba(6,182,212,0.25)] flex items-center gap-2">
+            <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 shadow-[0_0_6px_#38bdf8]" />
+            <span>RA: <strong className="text-white">{hoverCoords.raStr}</strong> | Dec: <strong className="text-white">{hoverCoords.decStr}</strong></span>
           </div>
         )}
 
         {/* Compass Cardinal Directions */}
-        <div className="absolute top-3 right-3 text-[10px] font-mono text-zinc-400 pointer-events-none flex flex-col items-center bg-black/75 backdrop-blur-md px-2 py-0.5 rounded border border-white/10">
-          <span className="font-semibold text-zinc-200">N (+Dec)</span>
+        <div className="absolute top-3 right-3 text-[10px] font-mono text-zinc-300 pointer-events-none flex flex-col items-center bg-[#07090e]/90 backdrop-blur-xl px-3 py-1 rounded-lg border border-white/15 shadow-[0_4px_20px_rgba(0,0,0,0.6)]">
+          <span className="font-semibold text-cyan-300">N (+Dec)</span>
           <span className="text-[9px] text-zinc-400">E ◄──► W</span>
         </div>
       </div>
