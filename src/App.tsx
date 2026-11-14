@@ -12,15 +12,15 @@ import { InfoModal } from './components/InfoModal';
 
 export const App: React.FC = () => {
   // Current Target State
-  const [currentTarget, setCurrentTarget] = useState<AstroTarget>(OFFICIAL_TARGETS[1]); // WISE 0855 by default
+  const [currentTarget, setCurrentTarget] = useState<AstroTarget>(OFFICIAL_TARGETS[0]); // Barnard's Star by default
   const [isCustomCoords, setIsCustomCoords] = useState(false);
 
   // Coordinate Inputs
-  const [raInput, setRaInput] = useState(OFFICIAL_TARGETS[1].raString);
-  const [decInput, setDecInput] = useState(OFFICIAL_TARGETS[1].decString);
+  const [raInput, setRaInput] = useState(OFFICIAL_TARGETS[0].raString);
+  const [decInput, setDecInput] = useState(OFFICIAL_TARGETS[0].decString);
 
   // Viewing Options
-  const [fovArcmin, setFovArcmin] = useState(OFFICIAL_TARGETS[1].recommendedFOV);
+  const [fovArcmin, setFovArcmin] = useState(OFFICIAL_TARGETS[0].recommendedFOV);
   const [viewMode, setViewMode] = useState<ViewMode>('blink');
   const [inverted, setInverted] = useState(false);
   const [showMotionVector, setShowMotionVector] = useState(true);
