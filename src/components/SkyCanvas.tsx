@@ -486,29 +486,7 @@ export const SkyCanvas: React.FC<SkyCanvasProps> = ({
       ? `${(scaleBarArcsec / 60).toFixed(1)}'` 
       : `${scaleBarArcsec.toFixed(0)}"`;
     ctx.fillText(`${scaleLabel} (${fovArcmin.toFixed(1)}' FOV)`, 16, 40);
-
-    // Overlay Authentic Mission Tag on HUD (Bottom-Right)
-    const epochYear = currentEpoch === 0 ? '2015' : currentEpoch === 1 ? '2017' : '2020';
-    const bandLabel = detectorBand === 1 
-      ? 'Det 1-2 (0.75-1.86µm)' 
-      : detectorBand === 2 
-      ? 'Det 3-4 (1.86-3.82µm)' 
-      : detectorBand === 3 
-      ? 'Det 5-6 (3.82-5.00µm)' 
-      : 'All Bands (0.75-5.00µm)';
-
-    ctx.fillStyle = inverted ? 'rgba(0,0,0,0.85)' : 'rgba(7, 9, 14, 0.9)';
-    ctx.strokeStyle = 'rgba(56, 189, 248, 0.3)';
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.roundRect(canvas.width - 275, canvas.height - 34, 260, 24, 6);
-    ctx.fill();
-    ctx.stroke();
-
-    ctx.fillStyle = '#38bdf8';
-    ctx.font = 'bold 9px ui-monospace, monospace';
-    ctx.fillText(`NASA unWISE [${bandLabel}] • Ep ${currentEpoch + 1} (${epochYear})`, canvas.width - 268, canvas.height - 18);
-  }, [currentEpoch, viewMode, zoom, pan, showMotionVector, target, currentPixscale, isWide, fovArcmin, inverted, detectorBand]);
+  }, [currentEpoch, viewMode, zoom, pan, showMotionVector, target, currentPixscale, isWide, fovArcmin, inverted]);
 
   useEffect(() => {
     drawMainCanvas();
@@ -578,6 +556,14 @@ export const SkyCanvas: React.FC<SkyCanvasProps> = ({
     setZoom(1);
     setPan({ x: 0, y: 0 });
   };
+
+  const bandLabel = detectorBand === 1 
+    ? 'Det 1-2 (0.75-1.86µm)' 
+    : detectorBand === 2 
+    ? 'Det 3-4 (1.86-3.82µm)' 
+    : detectorBand === 3 
+    ? 'Det 5-6 (3.82-5.00µm)' 
+    : 'All Bands (0.75-5.00µm)';
 
   const epochYears = ['2015', '2017', '2020'];
 
@@ -668,12 +654,16 @@ export const SkyCanvas: React.FC<SkyCanvasProps> = ({
         />
 
         {/* Live Coordinate Reticle Info in Bottom Left */}
-        {hoverCoords && (
-          <div className="absolute bottom-3 left-3 bg-[#07090e]/90 backdrop-blur-xl px-3 py-1.5 rounded-lg text-[10px] font-mono text-cyan-200 border border-cyan-500/30 pointer-events-none shadow-[0_0_16px_rgba(6,182,212,0.25)] flex items-center gap-2">
-            <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 shadow-[0_0_6px_#38bdf8]" />
-            <span>RA: <strong className="text-white">{hoverCoords.raStr}</strong> | Dec: <strong className="text-white">{hoverCoords.decStr}</strong></span>
-          </div>
-        )}
+        <div className="absolute bottom-3 left-3 bg-[#07090e]/95 backdrop-blur-xl px-3 py-1.5 rounded-lg text-[10px] font-mono text-cyan-200 border border-cyan-500/30 pointer-events-none shadow-[0_0_16px_rgba(6,182,212,0.25)] flex items-center gap-2 z-10">
+          <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 shadow-[0_0_6px_#38bdf8]" />
+          <span>RA: <strong className="text-white">{hoverCoords ? hoverCoords.raStr : target.raString}</strong> | Dec: <strong className="text-white">{hoverCoords ? hoverCoords.decStr : target.decString}</strong></span>
+        </div>
+
+        {/* Mission Telemetry Info in Bottom Right */}
+        <div className="absolute bottom-3 right-3 bg-[#07090e]/95 backdrop-blur-xl px-3 py-1.5 rounded-lg text-[10px] font-mono text-cyan-200 border border-cyan-500/30 pointer-events-none shadow-[0_0_16px_rgba(6,182,212,0.25)] flex items-center gap-2 z-10">
+          <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 shadow-[0_0_6px_#38bdf8]" />
+          <span>NASA unWISE <strong className="text-white">[{bandLabel}]</strong> • Ep {currentEpoch + 1} ({epochYears[currentEpoch]})</span>
+        </div>
 
         {/* Compass Cardinal Directions */}
         <div className="absolute top-3 right-3 text-[10px] font-mono text-zinc-300 pointer-events-none flex flex-col items-center bg-[#07090e]/90 backdrop-blur-xl px-3 py-1 rounded-lg border border-white/15 shadow-[0_4px_20px_rgba(0,0,0,0.6)]">

@@ -282,26 +282,48 @@ export const SpectrumViewer: React.FC<SpectrumViewerProps> = ({
               </div>
 
               {/* Side-by-side snapshot preview */}
-              {target.archivalComparison && (
-                <div className="flex items-center space-x-2">
-                  <div className="text-center">
-                    <img
-                      src={target.archivalComparison.epoch1_url}
-                      alt="AllWISE Infrared"
-                      className="w-20 h-20 rounded-md border border-white/10 object-cover shadow-md"
-                    />
-                    <span className="text-[9px] text-zinc-400 font-mono block mt-1">AllWISE</span>
+              {(() => {
+                const isBenchmark = ['barnards-star', 'wise-0855', 'epsilon-indi-b', 'rw-aurigae', 'r-draconis'].includes(target.id);
+                const epoch1Src = isBenchmark 
+                  ? `/cutouts/${target.id}_epoch0.jpg` 
+                  : (target.archivalComparison?.epoch1_url || `/cutouts/barnards-star_epoch0.jpg`);
+                const epoch2Src = isBenchmark 
+                  ? `/cutouts/${target.id}_epoch2.jpg` 
+                  : (target.archivalComparison?.epoch2_url || `/cutouts/barnards-star_epoch2.jpg`);
+
+                return (
+                  <div className="flex items-center space-x-3">
+                    <div className="text-center">
+                      <div className="relative w-20 h-20 rounded-lg border border-cyan-500/30 overflow-hidden shadow-[0_0_12px_rgba(6,182,212,0.15)] bg-black">
+                        <img
+                          src={epoch1Src}
+                          alt="AllWISE Early Epoch (2015)"
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).src = `/cutouts/barnards-star_epoch0.jpg`;
+                          }}
+                        />
+                        <div className="absolute top-1 left-1 px-1 py-0.2 rounded bg-black/75 text-[8px] font-mono text-cyan-300 border border-white/10">2015</div>
+                      </div>
+                      <span className="text-[10px] text-zinc-300 font-mono block mt-1">AllWISE (Ep 1)</span>
+                    </div>
+                    <div className="text-center">
+                      <div className="relative w-20 h-20 rounded-lg border border-cyan-500/30 overflow-hidden shadow-[0_0_12px_rgba(6,182,212,0.15)] bg-black">
+                        <img
+                          src={epoch2Src}
+                          alt="NEOWISE Late Epoch (2020)"
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).src = `/cutouts/barnards-star_epoch2.jpg`;
+                          }}
+                        />
+                        <div className="absolute top-1 left-1 px-1 py-0.2 rounded bg-black/75 text-[8px] font-mono text-amber-300 border border-white/10">2020</div>
+                      </div>
+                      <span className="text-[10px] text-zinc-300 font-mono block mt-1">NEOWISE (Ep 3)</span>
+                    </div>
                   </div>
-                  <div className="text-center">
-                    <img
-                      src={target.archivalComparison.epoch2_url}
-                      alt="2MASS Infrared"
-                      className="w-20 h-20 rounded-md border border-white/10 object-cover shadow-md"
-                    />
-                    <span className="text-[9px] text-zinc-400 font-mono block mt-1">2MASS</span>
-                  </div>
-                </div>
-              )}
+                );
+              })()}
             </div>
           )}
         </div>
