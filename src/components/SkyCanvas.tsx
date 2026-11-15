@@ -419,25 +419,138 @@ export const SkyCanvas: React.FC<SkyCanvasProps> = ({
         const arrowEndX = starPosX + (-pmRATotal * futureYears) / arcsecPerPixel;
         const arrowEndY = starPosY + (-pmDecTotal * futureYears) / arcsecPerPixel;
 
+        const dx = arrowEndX - starPosX;
+        const dy = arrowEndY - starPosY;
+        const vectorLength = Math.hypot(dx, dy);
+
         ctx.save();
-        ctx.strokeStyle = '#f59e0b';
-        ctx.lineWidth = 2 / zoom;
-        ctx.setLineDash([4, 4]);
+
+        // Angle of trajectory
+        const angle = Math.atan2(dy, dx);
+
+        // Arrowhead size in canvas coords (proportional to screen zoom so it stays crisp & legible)
+        const headLength = Math.max(10 / zoom, Math.min(vectorLength * 0.4, 18 / zoom));
+        const headWidth = Math.max(6 / zoom, Math.min(vectorLength * 0.25, 11 / zoom));
+
+        // Colors tailored for contrast in both regular dark cosmos and astronomer negative mode
+        const isInv = inverted;
+        const backingColor = isInv ? 'rgba(255, 255, 255, 0.95)' : 'rgba(0, 0, 0, 0.85)';
+        const glowColor = isInv ? 'rgba(180, 83, 9, 0.4)' : 'rgba(245, 158, 11, 0.75)';
+        const strokeColor = isInv ? '#c2410c' : '#f59e0b'; // Bold amber / orange-red
+        const coreColor = isInv ? '#7c2d12' : '#fef08a'; // Bright core highlight
+        const textBgColor = isInv ? 'rgba(255, 255, 255, 0.95)' : 'rgba(8, 11, 20, 0.92)';
+        const textBorderColor = isInv ? 'rgba(194, 65, 12, 0.7)' : 'rgba(245, 158, 11, 0.65)';
+        const textFillColor = isInv ? '#9a3412' : '#fef08a';
+
+        // 1. Vector Origin Anchor Node
+        ctx.beginPath();
+        ctx.arc(starPosX, starPosY, 3.5 / zoom, 0, Math.PI * 2);
+        ctx.fillStyle = backingColor;
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(starPosX, starPosY, 2.5 / zoom, 0, Math.PI * 2);
+        ctx.fillStyle = strokeColor;
+        ctx.fill();
+
+        // 2. High-Visibility Trajectory Vector Line (Dual/Triple Pass)
+        // Pass A: Dark outline backing for maximum isolation from bright stars/dust
         ctx.beginPath();
         ctx.moveTo(starPosX, starPosY);
         ctx.lineTo(arrowEndX, arrowEndY);
+        ctx.strokeStyle = backingColor;
+        ctx.lineWidth = 5.5 / zoom;
+        ctx.lineCap = 'round';
         ctx.stroke();
 
-        // Arrow head
-        ctx.setLineDash([]);
-        ctx.fillStyle = '#f59e0b';
+        // Pass B: Luminous amber glow pass
+        ctx.shadowColor = glowColor;
+        ctx.shadowBlur = 10;
+        ctx.strokeStyle = strokeColor;
+        ctx.lineWidth = 3.2 / zoom;
+        ctx.stroke();
+
+        // Pass C: Bright center core line for laser-sharp precision
+        ctx.shadowBlur = 0;
+        ctx.strokeStyle = coreColor;
+        ctx.lineWidth = 1.4 / zoom;
+        ctx.stroke();
+
+        // 3. Directional Chevron Arrowhead
+        const tipX = arrowEndX;
+        const tipY = arrowEndY;
+        const wing1X = tipX - headLength * Math.cos(angle) + headWidth * Math.sin(angle);
+        const wing1Y = tipY - headLength * Math.sin(angle) - headWidth * Math.cos(angle);
+        const wing2X = tipX - headLength * Math.cos(angle) - headWidth * Math.sin(angle);
+        const wing2Y = tipY - headLength * Math.sin(angle) + headWidth * Math.cos(angle);
+
+        // Arrowhead outline & fill
         ctx.beginPath();
-        ctx.arc(arrowEndX, arrowEndY, 4 / zoom, 0, Math.PI * 2);
+        ctx.moveTo(tipX, tipY);
+        ctx.lineTo(wing1X, wing1Y);
+        ctx.lineTo(wing2X, wing2Y);
+        ctx.closePath();
+
+        // Shadow / glow for arrowhead
+        ctx.shadowColor = glowColor;
+        ctx.shadowBlur = 10;
+        ctx.fillStyle = strokeColor;
+        ctx.fill();
+        ctx.shadowBlur = 0;
+        ctx.strokeStyle = backingColor;
+        ctx.lineWidth = 1.5 / zoom;
+        ctx.stroke();
+
+        // 4. Destination +5yr Target Ring
+        ctx.beginPath();
+        ctx.arc(arrowEndX, arrowEndY, 5 / zoom, 0, Math.PI * 2);
+        ctx.strokeStyle = coreColor;
+        ctx.lineWidth = 1.5 / zoom;
+        ctx.stroke();
+
+        // 5. Scientific Information Pill / Badge
+        const totalDrift5yr = (target.properMotion.totalArcsecPerYear * futureYears).toFixed(1);
+        const badgeLabel = `Gaia DR3 Drift (+5yr) • ${totalDrift5yr}"`;
+
+        const fontSize = 11 / zoom;
+        ctx.font = `600 ${fontSize}px ui-monospace, SFMono-Regular, Menlo, monospace`;
+        const textMetrics = ctx.measureText(badgeLabel);
+        const textWidth = textMetrics.width;
+        const padX = 7 / zoom;
+        const padY = 4 / zoom;
+        const badgeW = textWidth + padX * 2;
+        const badgeH = fontSize + padY * 2;
+
+        // Smart placement avoiding the line:
+        // If pointing to the left, position pill to the left; otherwise to the right
+        const placeLeft = Math.cos(angle) < -0.3;
+        const badgeX = placeLeft ? arrowEndX - badgeW - 12 / zoom : arrowEndX + 12 / zoom;
+        const badgeY = arrowEndY - badgeH / 2;
+
+        // Draw pill background with rounded corners
+        const radius = 4 / zoom;
+        ctx.beginPath();
+        if (ctx.roundRect) {
+          ctx.roundRect(badgeX, badgeY, badgeW, badgeH, radius);
+        } else {
+          ctx.rect(badgeX, badgeY, badgeW, badgeH);
+        }
+        ctx.fillStyle = textBgColor;
+        ctx.fill();
+        ctx.strokeStyle = textBorderColor;
+        ctx.lineWidth = 1 / zoom;
+        ctx.stroke();
+
+        // Little gold status indicator dot inside pill
+        ctx.beginPath();
+        ctx.arc(badgeX + padX + 2 / zoom, badgeY + badgeH / 2, 2.2 / zoom, 0, Math.PI * 2);
+        ctx.fillStyle = strokeColor;
         ctx.fill();
 
-        ctx.font = `${Math.max(10, 11 / zoom)}px ui-monospace, monospace`;
-        ctx.fillStyle = '#fbbf24';
-        ctx.fillText(`Gaia Drift (+5yr)`, arrowEndX + 8 / zoom, arrowEndY + 4 / zoom);
+        // Pill text
+        ctx.fillStyle = textFillColor;
+        ctx.textBaseline = 'middle';
+        ctx.fillText(badgeLabel, badgeX + padX + 7 / zoom, badgeY + badgeH / 2 + 0.5 / zoom);
+
         ctx.restore();
       }
     }
