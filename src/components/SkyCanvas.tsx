@@ -399,12 +399,6 @@ export const SkyCanvas: React.FC<SkyCanvasProps> = ({
 
     let starPosX = centerX;
     let starPosY = centerY;
-    let gaiaLabelData: {
-      tipX: number;
-      tipY: number;
-      angle: number;
-      totalDrift5yr: string;
-    } | null = null;
 
     if (target.properMotion) {
       const pmRATotal = target.properMotion.pmRA / 1000;   // arcsec/yr
@@ -425,36 +419,43 @@ export const SkyCanvas: React.FC<SkyCanvasProps> = ({
         const arrowEndX = starPosX + (-pmRATotal * futureYears) / arcsecPerPixel;
         const arrowEndY = starPosY + (-pmDecTotal * futureYears) / arcsecPerPixel;
 
-        const dx = arrowEndX - starPosX;
-        const dy = arrowEndY - starPosY;
-        const vectorLength = Math.hypot(dx, dy);
-
-        if (vectorLength > 1) {
-          const angle = Math.atan2(dy, dx);
-
-          ctx.save();
-          // Simple, single vibrant 2D line
-          ctx.beginPath();
-          ctx.moveTo(starPosX, starPosY);
-          ctx.lineTo(arrowEndX, arrowEndY);
-          ctx.strokeStyle = inverted ? '#ea580c' : '#facc15';
-          ctx.lineWidth = 2.5 / zoom;
-          ctx.lineCap = 'round';
-          if (!inverted) {
-            ctx.shadowColor = '#facc15';
-            ctx.shadowBlur = 6;
-          }
-          ctx.stroke();
-          ctx.restore();
-
-          // Stash data for 1:1 native screen-pixel text rendering (razor sharp at all zoom levels)
-          gaiaLabelData = {
-            tipX: arrowEndX,
-            tipY: arrowEndY,
-            angle,
-            totalDrift5yr: (target.properMotion.totalArcsecPerYear * futureYears).toFixed(1),
-          };
+        ctx.save();
+        // 1. Dashed gold vector line
+        ctx.strokeStyle = inverted ? '#c2410c' : '#fbbf24';
+        ctx.lineWidth = 2.5 / zoom;
+        ctx.setLineDash([5 / zoom, 4 / zoom]);
+        if (!inverted) {
+          ctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
+          ctx.shadowBlur = 4;
         }
+        ctx.beginPath();
+        ctx.moveTo(starPosX, starPosY);
+        ctx.lineTo(arrowEndX, arrowEndY);
+        ctx.stroke();
+
+        // 2. Amber endpoint dot
+        ctx.setLineDash([]);
+        ctx.shadowBlur = 0;
+        ctx.fillStyle = inverted ? '#c2410c' : '#fbbf24';
+        ctx.beginPath();
+        ctx.arc(arrowEndX, arrowEndY, 4.5 / zoom, 0, Math.PI * 2);
+        ctx.fill();
+
+        // 3. Clear, readable text label
+        const fontSize = Math.max(11, 12 / zoom);
+        ctx.font = `600 ${fontSize}px ui-monospace, SFMono-Regular, Menlo, monospace`;
+        const textX = arrowEndX + 8 / zoom;
+        const textY = arrowEndY + 4 / zoom;
+
+        // Subtle dark contrast stroke so letters pop clearly against bright stars
+        ctx.strokeStyle = inverted ? 'rgba(255, 255, 255, 0.9)' : 'rgba(0, 0, 0, 0.85)';
+        ctx.lineWidth = 2.5 / zoom;
+        ctx.lineJoin = 'round';
+        ctx.strokeText(`Gaia Drift (+5yr)`, textX, textY);
+
+        ctx.fillStyle = inverted ? '#9a3412' : '#fbbf24';
+        ctx.fillText(`Gaia Drift (+5yr)`, textX, textY);
+        ctx.restore();
       }
     }
 
@@ -484,41 +485,6 @@ export const SkyCanvas: React.FC<SkyCanvasProps> = ({
     ctx.restore();
 
     ctx.restore(); // Restore unpanned, unzoomed HUD coordinates
-
-    // Gaia Proper Motion Drift Label (Rendered in unzoomed 1:1 screen pixels for razor-sharp, effortless readability)
-    if (showMotionVector && gaiaLabelData) {
-      const tipScreenX = canvas.width / 2 + pan.x + (gaiaLabelData.tipX - canvas.width / 2) * zoom;
-      const tipScreenY = canvas.height / 2 + pan.y + (gaiaLabelData.tipY - canvas.height / 2) * zoom;
-
-      // Only draw if within visible canvas area
-      if (
-        tipScreenX >= -150 && tipScreenX <= canvas.width + 150 &&
-        tipScreenY >= -50 && tipScreenY <= canvas.height + 50
-      ) {
-        ctx.save();
-        const labelText = `Gaia Drift (+5yr): ${gaiaLabelData.totalDrift5yr}"`;
-        ctx.font = 'bold 12px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-        const textWidth = ctx.measureText(labelText).width;
-
-        const placeLeft = Math.cos(gaiaLabelData.angle) < -0.2;
-        const textX = placeLeft ? tipScreenX - textWidth - 8 : tipScreenX + 8;
-        const textY = tipScreenY;
-
-        ctx.textBaseline = 'middle';
-
-        // 1. Crisp dark contrast halo (ensures 100% legibility over any star field or nebula without a box)
-        ctx.strokeStyle = inverted ? 'rgba(255, 255, 255, 0.95)' : 'rgba(0, 0, 0, 0.95)';
-        ctx.lineWidth = 3.5;
-        ctx.lineJoin = 'round';
-        ctx.strokeText(labelText, textX, textY);
-
-        // 2. Vibrant text fill
-        ctx.fillStyle = inverted ? '#c2410c' : '#fef08a';
-        ctx.fillText(labelText, textX, textY);
-
-        ctx.restore();
-      }
-    }
 
     // Draw Crisp Angular Scale Bar on HUD (Top-Left)
     const scaleBarArcsec = requestedFovArcsec * 0.1; // 10% of field width
