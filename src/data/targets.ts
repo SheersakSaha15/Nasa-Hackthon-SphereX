@@ -67,6 +67,7 @@ const BASE_TARGETS: AstroTarget[] = [
     mockSpectrum: generateSPHERExSpectrum(
       (wl) => Math.exp(-Math.pow(wl - 1.2, 2) / 2.5) * 0.9 + 0.1,
       [
+        { wl: 0.85, width: 0.10, depth: 0.30, name: "TiO Bands" },
         { wl: 1.4, width: 0.15, depth: 0.35, name: "H2O Vapor" },
         { wl: 1.9, width: 0.18, depth: 0.40, name: "H2O Vapor" },
         { wl: 2.3, width: 0.12, depth: 0.25, name: "CO Bandhead" },

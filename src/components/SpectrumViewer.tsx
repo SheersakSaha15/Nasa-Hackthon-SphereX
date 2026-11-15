@@ -74,10 +74,38 @@ export const SpectrumViewer: React.FC<SpectrumViewerProps> = ({
     return Array.from(groups.values());
   }, [points]);
 
-  const getFeatureColor = (wl: number) => {
-    if (wl < 1.8) return { stroke: '#f59e0b', bg: '#78350f', text: '#fef3c7' };
-    if (wl < 3.2) return { stroke: '#38bdf8', bg: '#082f49', text: '#e0f2fe' };
-    return { stroke: '#c084fc', bg: '#3b0764', text: '#f5d0fe' };
+  const getFeatureColor = (featureName?: string, wl?: number) => {
+    const name = (featureName || '').toLowerCase();
+
+    // 1. Water Ice / Vapor -> Deep Ocean / Sky Blue (Blue)
+    if (name.includes('h2o') || name.includes('water') || name.includes('ice')) {
+      return { stroke: '#38bdf8', bg: '#082f49', text: '#e0f2fe' };
+    }
+
+    // 2. CH4 / Methane / Hydrocarbons -> Warm Earthy Brown / Amber (Brown)
+    if (name.includes('ch4') || name.includes('methane') || name.includes('hydrocarbon')) {
+      return { stroke: '#f59e0b', bg: '#78350f', text: '#fef3c7' };
+    }
+
+    // 3. CO2 Ice / CO Gas / Carbon Oxides -> Deep Royal Purple (Purple)
+    if (name.includes('co2') || name.includes('co ') || name.includes('co bandhead') || name.includes('carbon') || name.includes('co overtone') || name.includes('co fundamental') || name.includes('dioxide')) {
+      return { stroke: '#c084fc', bg: '#3b0764', text: '#f5d0fe' };
+    }
+
+    // 4. TiO Bands / Titanium / Metals -> Warm Rust / Burnt Amber
+    if (name.includes('tio') || name.includes('titanium') || name.includes('metal')) {
+      return { stroke: '#fb923c', bg: '#7c2d12', text: '#ffedd5' };
+    }
+
+    // 5. NH3 / Ammonia / Silicates / Dust -> Emerald / Teal Green
+    if (name.includes('nh3') || name.includes('ammonia') || name.includes('dust') || name.includes('silicate')) {
+      return { stroke: '#34d399', bg: '#064e3b', text: '#d1fae5' };
+    }
+
+    // Fallback by wavelength
+    if (wl && wl >= 3.8) return { stroke: '#c084fc', bg: '#3b0764', text: '#f5d0fe' };
+    if (wl && wl >= 2.0) return { stroke: '#38bdf8', bg: '#082f49', text: '#e0f2fe' };
+    return { stroke: '#f59e0b', bg: '#78350f', text: '#fef3c7' };
   };
 
   // Mouse interaction handlers for the SVG
@@ -229,11 +257,17 @@ export const SpectrumViewer: React.FC<SpectrumViewerProps> = ({
                       </span>
                       <span className="text-zinc-400">Channel: <strong className="text-cyan-200">#{(activeIndex ?? 0) + 1} / 102</strong></span>
                       <span className="text-zinc-400">Flux: <strong className="text-amber-300">{(activePoint.flux * 100).toFixed(1)}%</strong></span>
-                      {activePoint.featureName && (
-                        <span className="px-1.5 py-0.2 rounded bg-cyan-950/80 border border-cyan-400/50 text-cyan-200 font-semibold shadow-[0_0_8px_rgba(6,182,212,0.25)]">
-                          🔬 {activePoint.featureName}
-                        </span>
-                      )}
+                      {activePoint.featureName && (() => {
+                        const colors = getFeatureColor(activePoint.featureName, activePoint.wavelength);
+                        return (
+                          <span 
+                            style={{ backgroundColor: colors.bg, borderColor: colors.stroke, color: colors.text }}
+                            className="px-2 py-0.5 rounded border text-[10px] font-bold shadow-[0_0_8px_rgba(0,0,0,0.5)]"
+                          >
+                            🔬 {activePoint.featureName}
+                          </span>
+                        );
+                      })()}
                       <span className="text-zinc-500 text-[9px] hidden sm:inline">{getSPHERExBand(activePoint.wavelength)}</span>
                       {selectedIndex !== null && (
                         <button
@@ -288,7 +322,7 @@ export const SpectrumViewer: React.FC<SpectrumViewerProps> = ({
                     {/* Dynamic Target-Specific Molecular Markers */}
                     {dynamicMarkers.map(({ point: mPt, index: mIdx }, i) => {
                       const mx = getX(mPt.wavelength);
-                      const colors = getFeatureColor(mPt.wavelength);
+                      const colors = getFeatureColor(mPt.featureName, mPt.wavelength);
                       const isSelected = selectedIndex === mIdx || (activePoint && activePoint.featureName === mPt.featureName);
 
                       return (
@@ -395,26 +429,56 @@ export const SpectrumViewer: React.FC<SpectrumViewerProps> = ({
                   </div>
                   <div className="flex flex-wrap gap-1">
                     {target.spectralFeatures.map((feat, i) => {
-                      const isMatched = activePoint?.featureName && feat.toLowerCase().includes(activePoint.featureName.toLowerCase());
+                      const colors = getFeatureColor(feat);
+                      const isMatched = activePoint && (
+                        (activePoint.featureName && feat.toLowerCase().includes(activePoint.featureName.toLowerCase())) ||
+                        feat.toLowerCase().includes(activePoint.wavelength.toFixed(1)) ||
+                        feat.toLowerCase().includes(activePoint.wavelength.toFixed(2))
+                      );
 
                       return (
                         <button
                           key={i}
                           onClick={() => {
-                            const matchedIdx = points.findIndex(
+                            // 1. First try matching by featureName in points
+                            let matchedIdx = points.findIndex(
                               (p) => p.featureName && feat.toLowerCase().includes(p.featureName.toLowerCase())
                             );
+
+                            // 2. If not matched by name, match by parsed wavelength (e.g. 0.85, 1.4, 2.3, 3.4)
+                            if (matchedIdx === -1) {
+                              const wlMatch = feat.match(/([0-9.]+)\s*µ?m/i);
+                              if (wlMatch) {
+                                const targetWl = parseFloat(wlMatch[1]);
+                                let closestDist = Infinity;
+                                points.forEach((p, idx) => {
+                                  const d = Math.abs(p.wavelength - targetWl);
+                                  if (d < closestDist) {
+                                    closestDist = d;
+                                    matchedIdx = idx;
+                                  }
+                                });
+                              }
+                            }
+
                             if (matchedIdx !== -1) {
                               setSelectedIndex(matchedIdx);
                             }
                           }}
-                          className={`px-2 py-0.5 rounded border text-[10px] font-mono flex items-center gap-1.5 transition-all cursor-pointer ${
-                            isMatched
-                              ? 'bg-cyan-600/30 text-white border-cyan-400 shadow-[0_0_10px_rgba(6,182,212,0.4)] scale-105'
-                              : 'bg-cyan-950/40 text-cyan-200 border-cyan-500/25 hover:border-cyan-400/60 hover:text-white'
+                          style={{
+                            backgroundColor: colors.bg,
+                            borderColor: isMatched ? '#ffffff' : colors.stroke,
+                            color: colors.text,
+                            boxShadow: isMatched ? `0 0 12px ${colors.stroke}` : undefined,
+                          }}
+                          className={`px-2 py-1 rounded border text-[10px] font-mono flex items-center gap-1.5 transition-all cursor-pointer ${
+                            isMatched ? 'scale-105 font-bold ring-1 ring-white/60' : 'opacity-85 hover:opacity-100 hover:scale-102'
                           }`}
                         >
-                          <span className={`w-1 h-1 rounded-full ${isMatched ? 'bg-cyan-300 shadow-[0_0_6px_#22d3ee]' : 'bg-cyan-400'}`} />
+                          <span 
+                            className="w-1.5 h-1.5 rounded-full" 
+                            style={{ backgroundColor: colors.stroke }} 
+                          />
                           {feat}
                         </button>
                       );
