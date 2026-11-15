@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import type { AstroTarget, SpectralPoint } from '../types';
 import { 
   Activity, 
@@ -8,12 +8,19 @@ import {
   Download, 
   ExternalLink, 
   Layers, 
-  Database 
+  Database,
+  Crosshair
 } from 'lucide-react';
 
 interface SpectrumViewerProps {
   target: AstroTarget;
   inspectedCoords?: { raStr: string; decStr: string } | null;
+}
+
+function getSPHERExBand(wl: number): string {
+  if (wl <= 1.86) return 'SPHEREx Band 1-2 (0.75–1.86 µm)';
+  if (wl <= 3.82) return 'SPHEREx Band 3-4 (1.86–3.82 µm)';
+  return 'SPHEREx Band 5-6 (3.82–5.00 µm)';
 }
 
 export const SpectrumViewer: React.FC<SpectrumViewerProps> = ({
@@ -22,14 +29,23 @@ export const SpectrumViewer: React.FC<SpectrumViewerProps> = ({
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [activeTab, setActiveTab] = useState<'spectrum' | 'cutouts' | 'archival'>('spectrum');
+  const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
+  const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
+  const svgRef = useRef<SVGSVGElement | null>(null);
 
   const points = target.mockSpectrum;
   const cutouts = target.spherexCutouts || [];
 
+  // Reset selection when target changes
+  useEffect(() => {
+    setHoveredIndex(null);
+    setSelectedIndex(null);
+  }, [target.id]);
+
   // Chart dimensions
   const chartWidth = 560;
   const chartHeight = 110;
-  const padding = { top: 14, right: 16, bottom: 24, left: 32 };
+  const padding = { top: 18, right: 16, bottom: 24, left: 32 };
 
   const innerWidth = chartWidth - padding.left - padding.right;
   const innerHeight = chartHeight - padding.top - padding.bottom;
@@ -43,6 +59,76 @@ export const SpectrumViewer: React.FC<SpectrumViewerProps> = ({
     padding.left + ((wl - minWl) / (maxWl - minWl)) * innerWidth;
   const getY = (flux: number) =>
     padding.top + innerHeight - ((flux - minFlux) / (maxFlux - minFlux)) * innerHeight;
+
+  // Dynamically extract absorption features and band dips directly from the target spectrum
+  const dynamicMarkers = useMemo(() => {
+    const groups = new Map<string, { point: SpectralPoint; index: number }>();
+    points.forEach((pt, idx) => {
+      if (pt.featureName) {
+        const existing = groups.get(pt.featureName);
+        if (!existing || pt.flux < existing.point.flux) {
+          groups.set(pt.featureName, { point: pt, index: idx });
+        }
+      }
+    });
+    return Array.from(groups.values());
+  }, [points]);
+
+  const getFeatureColor = (wl: number) => {
+    if (wl < 1.8) return { stroke: '#f59e0b', bg: '#78350f', text: '#fef3c7' };
+    if (wl < 3.2) return { stroke: '#38bdf8', bg: '#082f49', text: '#e0f2fe' };
+    return { stroke: '#c084fc', bg: '#3b0764', text: '#f5d0fe' };
+  };
+
+  // Mouse interaction handlers for the SVG
+  const handleMouseMove = (e: React.MouseEvent<SVGSVGElement>) => {
+    if (!svgRef.current || points.length === 0) return;
+    const rect = svgRef.current.getBoundingClientRect();
+    const mouseX = e.clientX - rect.left;
+    const svgX = (mouseX / rect.width) * chartWidth;
+
+    if (svgX < padding.left || svgX > chartWidth - padding.right) return;
+
+    let closestIdx = 0;
+    let minDist = Infinity;
+    points.forEach((pt, idx) => {
+      const px = getX(pt.wavelength);
+      const dist = Math.abs(px - svgX);
+      if (dist < minDist) {
+        minDist = dist;
+        closestIdx = idx;
+      }
+    });
+    setHoveredIndex(closestIdx);
+  };
+
+  const handleMouseLeave = () => {
+    setHoveredIndex(null);
+  };
+
+  const handleSvgClick = (e: React.MouseEvent<SVGSVGElement>) => {
+    if (!svgRef.current || points.length === 0) return;
+    const rect = svgRef.current.getBoundingClientRect();
+    const mouseX = e.clientX - rect.left;
+    const svgX = (mouseX / rect.width) * chartWidth;
+
+    let closestIdx = 0;
+    let minDist = Infinity;
+    points.forEach((pt, idx) => {
+      const px = getX(pt.wavelength);
+      const dist = Math.abs(px - svgX);
+      if (dist < minDist) {
+        minDist = dist;
+        closestIdx = idx;
+      }
+    });
+
+    setSelectedIndex((prev) => (prev === closestIdx ? null : closestIdx));
+  };
+
+  // Active channel point (either hovered or locked by click)
+  const activeIndex = hoveredIndex !== null ? hoveredIndex : selectedIndex;
+  const activePoint = activeIndex !== null && points[activeIndex] ? points[activeIndex] : null;
 
   // Generate SVG path for 102 points
   const pathD = points && points.length > 0
@@ -132,75 +218,207 @@ export const SpectrumViewer: React.FC<SpectrumViewerProps> = ({
           {activeTab === 'spectrum' && (
             <div className="flex flex-col lg:flex-row items-stretch gap-3">
               {/* Chart Container */}
-              <div className="w-full lg:w-3/4 bg-black/60 backdrop-blur-md border border-white/10 rounded-lg p-2.5 relative shadow-inner">
-                <svg
-                  viewBox={`0 0 ${chartWidth} ${chartHeight}`}
-                  className="w-full h-28 sm:h-32 overflow-visible"
-                >
-                  <defs>
-                    <linearGradient id="spectrumGradient" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#06b6d4" stopOpacity="0.35" />
-                      <stop offset="60%" stopColor="#3b82f6" stopOpacity="0.1" />
-                      <stop offset="100%" stopColor="#3b82f6" stopOpacity="0.0" />
-                    </linearGradient>
+              <div className="w-full lg:w-3/4 bg-black/60 backdrop-blur-md border border-white/10 rounded-lg p-2.5 relative shadow-inner flex flex-col justify-between">
+                {/* Live Real-Time Channel Telemetry Readout */}
+                <div className="flex items-center justify-between px-2 py-1 bg-white/[0.03] border border-white/[0.08] rounded-md mb-1.5 text-[10px] font-mono select-none">
+                  {activePoint ? (
+                    <div className="flex items-center flex-wrap gap-x-3 gap-y-1 text-cyan-300">
+                      <span className="flex items-center gap-1.5">
+                        <span className="w-2 h-2 rounded-full bg-cyan-400 shadow-[0_0_8px_#38bdf8] animate-pulse" />
+                        <strong className="text-white text-[11px]">λ = {activePoint.wavelength.toFixed(3)} µm</strong>
+                      </span>
+                      <span className="text-zinc-400">Channel: <strong className="text-cyan-200">#{(activeIndex ?? 0) + 1} / 102</strong></span>
+                      <span className="text-zinc-400">Flux: <strong className="text-amber-300">{(activePoint.flux * 100).toFixed(1)}%</strong></span>
+                      {activePoint.featureName && (
+                        <span className="px-1.5 py-0.2 rounded bg-cyan-950/80 border border-cyan-400/50 text-cyan-200 font-semibold shadow-[0_0_8px_rgba(6,182,212,0.25)]">
+                          🔬 {activePoint.featureName}
+                        </span>
+                      )}
+                      <span className="text-zinc-500 text-[9px] hidden sm:inline">{getSPHERExBand(activePoint.wavelength)}</span>
+                      {selectedIndex !== null && (
+                        <button
+                          onClick={() => setSelectedIndex(null)}
+                          className="text-[9px] text-zinc-400 hover:text-white underline cursor-pointer ml-auto"
+                        >
+                          Clear Pin
+                        </button>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2 text-zinc-400">
+                      <Crosshair className="w-3 h-3 text-cyan-400 animate-spin" />
+                      <span>Hover or click across the 102 channels to inspect real-time SPHEREx infrared spectral flux</span>
+                    </div>
+                  )}
+                  <div className="text-[9px] font-mono tracking-wider text-cyan-400/80 uppercase hidden md:block">
+                    102 Channels (0.75–5.00 µm)
+                  </div>
+                </div>
 
-                    {/* Laser Glow Filter */}
-                    <filter id="laserGlow" x="-20%" y="-20%" width="140%" height="140%">
-                      <feGaussianBlur stdDeviation="3" result="blur" />
-                      <feMerge>
-                        <feMergeNode in="blur" />
-                        <feMergeNode in="SourceGraphic" />
-                      </feMerge>
-                    </filter>
-                  </defs>
+                <div className="relative">
+                  <svg
+                    ref={svgRef}
+                    viewBox={`0 0 ${chartWidth} ${chartHeight}`}
+                    className="w-full h-28 sm:h-32 overflow-visible cursor-crosshair"
+                    onMouseMove={handleMouseMove}
+                    onMouseLeave={handleMouseLeave}
+                    onClick={handleSvgClick}
+                  >
+                    <defs>
+                      <linearGradient id="spectrumGradient" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#06b6d4" stopOpacity="0.35" />
+                        <stop offset="60%" stopColor="#3b82f6" stopOpacity="0.1" />
+                        <stop offset="100%" stopColor="#3b82f6" stopOpacity="0.0" />
+                      </linearGradient>
 
-                  {/* Precision Grid Lines */}
-                  <line x1={padding.left} y1={getY(0.5)} x2={chartWidth - padding.right} y2={getY(0.5)} stroke="rgba(255,255,255,0.06)" strokeDasharray="2,2" />
-                  <line x1={padding.left} y1={padding.top + innerHeight} x2={chartWidth - padding.right} y2={padding.top + innerHeight} stroke="rgba(255,255,255,0.12)" />
+                      {/* Laser Glow Filter */}
+                      <filter id="laserGlow" x="-20%" y="-20%" width="140%" height="140%">
+                        <feGaussianBlur stdDeviation="3" result="blur" />
+                        <feMerge>
+                          <feMergeNode in="blur" />
+                          <feMergeNode in="SourceGraphic" />
+                        </feMerge>
+                      </filter>
+                    </defs>
 
-                  {/* Molecular Markers with High-Tech Pill Tags */}
-                  <line x1={getX(1.66)} y1={padding.top} x2={getX(1.66)} y2={padding.top + innerHeight} stroke="#f59e0b" strokeWidth="1" strokeDasharray="3,3" opacity="0.6" />
-                  <rect x={getX(1.66) - 34} y={padding.top - 2} width="68" height="12" rx="3" fill="#78350f" fillOpacity="0.8" stroke="#f59e0b" strokeWidth="0.8" />
-                  <text x={getX(1.66)} y={padding.top + 7} fill="#fef3c7" fontSize="7" fontWeight="bold" fontFamily="monospace" textAnchor="middle">CH4 (1.66µm)</text>
+                    {/* Precision Grid Lines */}
+                    <line x1={padding.left} y1={getY(0.5)} x2={chartWidth - padding.right} y2={getY(0.5)} stroke="rgba(255,255,255,0.06)" strokeDasharray="2,2" />
+                    <line x1={padding.left} y1={padding.top + innerHeight} x2={chartWidth - padding.right} y2={padding.top + innerHeight} stroke="rgba(255,255,255,0.12)" />
 
-                  <line x1={getX(3.05)} y1={padding.top} x2={getX(3.05)} y2={padding.top + innerHeight} stroke="#38bdf8" strokeWidth="1" strokeDasharray="3,3" opacity="0.6" />
-                  <rect x={getX(3.05) - 38} y={padding.top - 2} width="76" height="12" rx="3" fill="#082f49" fillOpacity="0.8" stroke="#38bdf8" strokeWidth="0.8" />
-                  <text x={getX(3.05)} y={padding.top + 7} fill="#e0f2fe" fontSize="7" fontWeight="bold" fontFamily="monospace" textAnchor="middle">H2O Ice (3.05µm)</text>
+                    {/* Dynamic Target-Specific Molecular Markers */}
+                    {dynamicMarkers.map(({ point: mPt, index: mIdx }, i) => {
+                      const mx = getX(mPt.wavelength);
+                      const colors = getFeatureColor(mPt.wavelength);
+                      const isSelected = selectedIndex === mIdx || (activePoint && activePoint.featureName === mPt.featureName);
 
-                  <line x1={getX(4.26)} y1={padding.top} x2={getX(4.26)} y2={padding.top + innerHeight} stroke="#c084fc" strokeWidth="1" strokeDasharray="3,3" opacity="0.6" />
-                  <rect x={getX(4.26) - 38} y={padding.top - 2} width="76" height="12" rx="3" fill="#3b0764" fillOpacity="0.8" stroke="#c084fc" strokeWidth="0.8" />
-                  <text x={getX(4.26)} y={padding.top + 7} fill="#f5d0fe" fontSize="7" fontWeight="bold" fontFamily="monospace" textAnchor="middle">CO2 Ice (4.26µm)</text>
+                      return (
+                        <g 
+                          key={i} 
+                          className="cursor-pointer group"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedIndex((prev) => (prev === mIdx ? null : mIdx));
+                          }}
+                        >
+                          <line 
+                            x1={mx} 
+                            y1={padding.top} 
+                            x2={mx} 
+                            y2={padding.top + innerHeight} 
+                            stroke={colors.stroke} 
+                            strokeWidth={isSelected ? "1.8" : "1"} 
+                            strokeDasharray="3,3" 
+                            opacity={isSelected ? "1" : "0.6"} 
+                          />
+                          <rect 
+                            x={mx - 38} 
+                            y={padding.top - 5} 
+                            width="76" 
+                            height="12" 
+                            rx="3" 
+                            fill={colors.bg} 
+                            fillOpacity={isSelected ? "0.95" : "0.75"} 
+                            stroke={colors.stroke} 
+                            strokeWidth={isSelected ? "1.5" : "0.8"}
+                            className="transition-all group-hover:stroke-white"
+                          />
+                          <text 
+                            x={mx} 
+                            y={padding.top + 3.5} 
+                            fill={colors.text} 
+                            fontSize="6.5" 
+                            fontWeight="bold" 
+                            fontFamily="monospace" 
+                            textAnchor="middle"
+                            className="group-hover:fill-white"
+                          >
+                            {mPt.featureName} ({mPt.wavelength.toFixed(2)}µm)
+                          </text>
+                        </g>
+                      );
+                    })}
 
-                  {/* Gradient Area & Dual Glowing Laser Curve */}
-                  <path d={areaD} fill="url(#spectrumGradient)" />
-                  <path d={pathD} fill="none" stroke="#38bdf8" strokeWidth="2.5" filter="url(#laserGlow)" opacity="0.9" />
-                  <path d={pathD} fill="none" stroke="#ffffff" strokeWidth="1" opacity="0.95" />
+                    {/* Gradient Area & Dual Glowing Laser Curve */}
+                    <path d={areaD} fill="url(#spectrumGradient)" />
+                    <path d={pathD} fill="none" stroke="#38bdf8" strokeWidth="2.5" filter="url(#laserGlow)" opacity="0.9" />
+                    <path d={pathD} fill="none" stroke="#ffffff" strokeWidth="1" opacity="0.95" />
 
-                  {/* Wavelength Ticks */}
-                  <text x={padding.left} y={chartHeight - 6} fill="#94a3b8" fontSize="8" fontFamily="monospace" textAnchor="start">0.75 µm</text>
-                  <text x={getX(2.0)} y={chartHeight - 6} fill="#94a3b8" fontSize="8" fontFamily="monospace" textAnchor="middle">2.0 µm</text>
-                  <text x={getX(3.5)} y={chartHeight - 6} fill="#94a3b8" fontSize="8" fontFamily="monospace" textAnchor="middle">3.5 µm</text>
-                  <text x={chartWidth - padding.right} y={chartHeight - 6} fill="#94a3b8" fontSize="8" fontFamily="monospace" textAnchor="end">5.0 µm</text>
-                </svg>
+                    {/* Active Scrubbing Channel Crosshair & Highlight Dot */}
+                    {activePoint && (
+                      <g pointerEvents="none">
+                        <line
+                          x1={getX(activePoint.wavelength)}
+                          y1={padding.top}
+                          x2={getX(activePoint.wavelength)}
+                          y2={padding.top + innerHeight}
+                          stroke="#22d3ee"
+                          strokeWidth="1.5"
+                          strokeDasharray="2,2"
+                        />
+                        <circle
+                          cx={getX(activePoint.wavelength)}
+                          cy={getY(activePoint.flux)}
+                          r="6.5"
+                          fill="none"
+                          stroke="#22d3ee"
+                          strokeWidth="1.5"
+                          filter="url(#laserGlow)"
+                        />
+                        <circle
+                          cx={getX(activePoint.wavelength)}
+                          cy={getY(activePoint.flux)}
+                          r="3"
+                          fill="#38bdf8"
+                          stroke="#ffffff"
+                          strokeWidth="1.5"
+                        />
+                      </g>
+                    )}
 
-                <div className="absolute top-2 right-2 text-[9px] font-mono tracking-wider text-cyan-300 bg-cyan-950/60 px-2 py-0.5 rounded border border-cyan-500/30 uppercase shadow-[0_0_8px_rgba(6,182,212,0.2)]">
-                  102 Channels (0.75–5.00 µm)
+                    {/* Wavelength Ticks */}
+                    <text x={padding.left} y={chartHeight - 6} fill="#94a3b8" fontSize="8" fontFamily="monospace" textAnchor="start">0.75 µm</text>
+                    <text x={getX(2.0)} y={chartHeight - 6} fill="#94a3b8" fontSize="8" fontFamily="monospace" textAnchor="middle">2.0 µm</text>
+                    <text x={getX(3.5)} y={chartHeight - 6} fill="#94a3b8" fontSize="8" fontFamily="monospace" textAnchor="middle">3.5 µm</text>
+                    <text x={chartWidth - padding.right} y={chartHeight - 6} fill="#94a3b8" fontSize="8" fontFamily="monospace" textAnchor="end">5.0 µm</text>
+                  </svg>
                 </div>
               </div>
 
               {/* Right Signatures Box */}
               <div className="w-full lg:w-1/4 bg-black/40 backdrop-blur-md p-3 rounded-lg border border-white/10 flex flex-col justify-between space-y-2 shadow-inner">
                 <div>
-                  <span className="text-[10px] font-mono uppercase tracking-wider text-cyan-300 font-semibold block mb-1.5">
-                    Key Infrared Signatures:
-                  </span>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <span className="text-[10px] font-mono uppercase tracking-wider text-cyan-300 font-semibold block">
+                      Key Infrared Signatures:
+                    </span>
+                    <span className="text-[8px] font-mono text-zinc-500 uppercase">Click to Inspect</span>
+                  </div>
                   <div className="flex flex-wrap gap-1">
-                    {target.spectralFeatures.map((feat, i) => (
-                      <span key={i} className="px-2 py-0.5 bg-cyan-950/40 text-cyan-200 rounded border border-cyan-500/25 text-[10px] font-mono flex items-center gap-1.5 shadow-[0_0_6px_rgba(6,182,212,0.15)]">
-                        <span className="w-1 h-1 rounded-full bg-cyan-400 shadow-[0_0_4px_#38bdf8]" />
-                        {feat}
-                      </span>
-                    ))}
+                    {target.spectralFeatures.map((feat, i) => {
+                      const isMatched = activePoint?.featureName && feat.toLowerCase().includes(activePoint.featureName.toLowerCase());
+
+                      return (
+                        <button
+                          key={i}
+                          onClick={() => {
+                            const matchedIdx = points.findIndex(
+                              (p) => p.featureName && feat.toLowerCase().includes(p.featureName.toLowerCase())
+                            );
+                            if (matchedIdx !== -1) {
+                              setSelectedIndex(matchedIdx);
+                            }
+                          }}
+                          className={`px-2 py-0.5 rounded border text-[10px] font-mono flex items-center gap-1.5 transition-all cursor-pointer ${
+                            isMatched
+                              ? 'bg-cyan-600/30 text-white border-cyan-400 shadow-[0_0_10px_rgba(6,182,212,0.4)] scale-105'
+                              : 'bg-cyan-950/40 text-cyan-200 border-cyan-500/25 hover:border-cyan-400/60 hover:text-white'
+                          }`}
+                        >
+                          <span className={`w-1 h-1 rounded-full ${isMatched ? 'bg-cyan-300 shadow-[0_0_6px_#22d3ee]' : 'bg-cyan-400'}`} />
+                          {feat}
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
                 <p className="text-[10px] text-zinc-400 leading-relaxed font-sans pt-1 border-t border-white/[0.06]">
