@@ -43,8 +43,8 @@
       }
     ],
     "archival_comparison": {
-      "epoch1_url": "https://alasky.cds.unistra.fr/hips-image-services/hips2fits?hips=CDS/P/allWISE/color&ra=269.4521&dec=4.6934&fov=0.15&width=512&height=512&format=jpg",
-      "epoch2_url": "https://alasky.cds.unistra.fr/hips-image-services/hips2fits?hips=CDS/P/2MASS/color&ra=269.4521&dec=4.6934&fov=0.15&width=512&height=512&format=jpg"
+      "epoch1_url": "/cutouts/barnards-star_epoch0.jpg",
+      "epoch2_url": "/cutouts/barnards-star_epoch2.jpg"
     }
   },
   "wise-0855": {
@@ -91,8 +91,8 @@
       }
     ],
     "archival_comparison": {
-      "epoch1_url": "https://alasky.cds.unistra.fr/hips-image-services/hips2fits?hips=CDS/P/allWISE/color&ra=133.7951&dec=-7.2452&fov=0.15&width=512&height=512&format=jpg",
-      "epoch2_url": "https://alasky.cds.unistra.fr/hips-image-services/hips2fits?hips=CDS/P/2MASS/color&ra=133.7951&dec=-7.2452&fov=0.15&width=512&height=512&format=jpg"
+      "epoch1_url": "/cutouts/wise-0855_epoch0.jpg",
+      "epoch2_url": "/cutouts/wise-0855_epoch2.jpg"
     }
   },
   "epsilon-indi-b": {
@@ -139,8 +139,8 @@
       }
     ],
     "archival_comparison": {
-      "epoch1_url": "https://alasky.cds.unistra.fr/hips-image-services/hips2fits?hips=CDS/P/allWISE/color&ra=331.0438&dec=-56.7828&fov=0.15&width=512&height=512&format=jpg",
-      "epoch2_url": "https://alasky.cds.unistra.fr/hips-image-services/hips2fits?hips=CDS/P/2MASS/color&ra=331.0438&dec=-56.7828&fov=0.15&width=512&height=512&format=jpg"
+      "epoch1_url": "/cutouts/epsilon-indi-b_epoch0.jpg",
+      "epoch2_url": "/cutouts/epsilon-indi-b_epoch2.jpg"
     }
   },
   "rw-aurigae": {
@@ -187,8 +187,8 @@
       }
     ],
     "archival_comparison": {
-      "epoch1_url": "https://alasky.cds.unistra.fr/hips-image-services/hips2fits?hips=CDS/P/allWISE/color&ra=76.9564&dec=30.4014&fov=0.15&width=512&height=512&format=jpg",
-      "epoch2_url": "https://alasky.cds.unistra.fr/hips-image-services/hips2fits?hips=CDS/P/2MASS/color&ra=76.9564&dec=30.4014&fov=0.15&width=512&height=512&format=jpg"
+      "epoch1_url": "/cutouts/rw-aurigae_epoch0.jpg",
+      "epoch2_url": "/cutouts/rw-aurigae_epoch2.jpg"
     }
   },
   "r-draconis": {
@@ -235,8 +235,8 @@
       }
     ],
     "archival_comparison": {
-      "epoch1_url": "https://alasky.cds.unistra.fr/hips-image-services/hips2fits?hips=CDS/P/allWISE/color&ra=248.1675&dec=66.755&fov=0.15&width=512&height=512&format=jpg",
-      "epoch2_url": "https://alasky.cds.unistra.fr/hips-image-services/hips2fits?hips=CDS/P/2MASS/color&ra=248.1675&dec=66.755&fov=0.15&width=512&height=512&format=jpg"
+      "epoch1_url": "/cutouts/r-draconis_epoch0.jpg",
+      "epoch2_url": "/cutouts/r-draconis_epoch2.jpg"
     }
   }
 }
