@@ -431,42 +431,27 @@ export const SkyCanvas: React.FC<SkyCanvasProps> = ({
 
         if (vectorLength > 1) {
           const angle = Math.atan2(dy, dx);
-          const arrowColor = inverted ? '#c2410c' : '#fbbf24';
+          const lineColor = inverted ? '#c2410c' : '#fbbf24';
 
           ctx.save();
 
-          // 1. Subtle dark contrast underlay so arrow is clean against bright stars or dark void
+          // 1. Subtle dark contrast underlay so the line stands out clearly against bright stars or dark void
           ctx.beginPath();
           ctx.moveTo(starPosX, starPosY);
           ctx.lineTo(arrowEndX, arrowEndY);
-          ctx.strokeStyle = inverted ? 'rgba(255, 255, 255, 0.6)' : 'rgba(0, 0, 0, 0.7)';
-          ctx.lineWidth = 3.5 / zoom;
+          ctx.strokeStyle = inverted ? 'rgba(255, 255, 255, 0.65)' : 'rgba(0, 0, 0, 0.75)';
+          ctx.lineWidth = 4 / zoom;
           ctx.lineCap = 'round';
           ctx.stroke();
 
-          // 2. Clean, slim vector shaft
+          // 2. Clean, highly visible line
           ctx.beginPath();
           ctx.moveTo(starPosX, starPosY);
           ctx.lineTo(arrowEndX, arrowEndY);
-          ctx.strokeStyle = arrowColor;
-          ctx.lineWidth = 2 / zoom;
+          ctx.strokeStyle = lineColor;
+          ctx.lineWidth = 2.2 / zoom;
+          ctx.lineCap = 'round';
           ctx.stroke();
-
-          // 3. Simple, sleek, sharp arrowhead
-          const headLength = Math.min(vectorLength * 0.28, 11 / zoom);
-          const headWidth = Math.min(vectorLength * 0.14, 4.5 / zoom);
-          const wing1X = arrowEndX - headLength * Math.cos(angle) + headWidth * Math.sin(angle);
-          const wing1Y = arrowEndY - headLength * Math.sin(angle) - headWidth * Math.cos(angle);
-          const wing2X = arrowEndX - headLength * Math.cos(angle) - headWidth * Math.sin(angle);
-          const wing2Y = arrowEndY - headLength * Math.sin(angle) + headWidth * Math.cos(angle);
-
-          ctx.beginPath();
-          ctx.moveTo(arrowEndX, arrowEndY);
-          ctx.lineTo(wing1X, wing1Y);
-          ctx.lineTo(wing2X, wing2Y);
-          ctx.closePath();
-          ctx.fillStyle = arrowColor;
-          ctx.fill();
 
           ctx.restore();
 
