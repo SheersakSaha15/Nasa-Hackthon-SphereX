@@ -399,6 +399,12 @@ export const SkyCanvas: React.FC<SkyCanvasProps> = ({
 
     let starPosX = centerX;
     let starPosY = centerY;
+    let gaiaLabelData: {
+      tipX: number;
+      tipY: number;
+      angle: number;
+      totalDrift5yr: string;
+    } | null = null;
 
     if (target.properMotion) {
       const pmRATotal = target.properMotion.pmRA / 1000;   // arcsec/yr
@@ -423,135 +429,55 @@ export const SkyCanvas: React.FC<SkyCanvasProps> = ({
         const dy = arrowEndY - starPosY;
         const vectorLength = Math.hypot(dx, dy);
 
-        ctx.save();
+        if (vectorLength > 1) {
+          const angle = Math.atan2(dy, dx);
+          const arrowColor = inverted ? '#c2410c' : '#fbbf24';
 
-        // Angle of trajectory
-        const angle = Math.atan2(dy, dx);
+          ctx.save();
 
-        // Arrowhead size in canvas coords (proportional to screen zoom so it stays crisp & legible)
-        const headLength = Math.max(10 / zoom, Math.min(vectorLength * 0.4, 18 / zoom));
-        const headWidth = Math.max(6 / zoom, Math.min(vectorLength * 0.25, 11 / zoom));
+          // 1. Subtle dark contrast underlay so arrow is clean against bright stars or dark void
+          ctx.beginPath();
+          ctx.moveTo(starPosX, starPosY);
+          ctx.lineTo(arrowEndX, arrowEndY);
+          ctx.strokeStyle = inverted ? 'rgba(255, 255, 255, 0.6)' : 'rgba(0, 0, 0, 0.7)';
+          ctx.lineWidth = 3.5 / zoom;
+          ctx.lineCap = 'round';
+          ctx.stroke();
 
-        // Colors tailored for contrast in both regular dark cosmos and astronomer negative mode
-        const isInv = inverted;
-        const backingColor = isInv ? 'rgba(255, 255, 255, 0.95)' : 'rgba(0, 0, 0, 0.85)';
-        const glowColor = isInv ? 'rgba(180, 83, 9, 0.4)' : 'rgba(245, 158, 11, 0.75)';
-        const strokeColor = isInv ? '#c2410c' : '#f59e0b'; // Bold amber / orange-red
-        const coreColor = isInv ? '#7c2d12' : '#fef08a'; // Bright core highlight
-        const textBgColor = isInv ? 'rgba(255, 255, 255, 0.95)' : 'rgba(8, 11, 20, 0.92)';
-        const textBorderColor = isInv ? 'rgba(194, 65, 12, 0.7)' : 'rgba(245, 158, 11, 0.65)';
-        const textFillColor = isInv ? '#9a3412' : '#fef08a';
+          // 2. Clean, slim vector shaft
+          ctx.beginPath();
+          ctx.moveTo(starPosX, starPosY);
+          ctx.lineTo(arrowEndX, arrowEndY);
+          ctx.strokeStyle = arrowColor;
+          ctx.lineWidth = 2 / zoom;
+          ctx.stroke();
 
-        // 1. Vector Origin Anchor Node
-        ctx.beginPath();
-        ctx.arc(starPosX, starPosY, 3.5 / zoom, 0, Math.PI * 2);
-        ctx.fillStyle = backingColor;
-        ctx.fill();
-        ctx.beginPath();
-        ctx.arc(starPosX, starPosY, 2.5 / zoom, 0, Math.PI * 2);
-        ctx.fillStyle = strokeColor;
-        ctx.fill();
+          // 3. Simple, sleek, sharp arrowhead
+          const headLength = Math.min(vectorLength * 0.28, 11 / zoom);
+          const headWidth = Math.min(vectorLength * 0.14, 4.5 / zoom);
+          const wing1X = arrowEndX - headLength * Math.cos(angle) + headWidth * Math.sin(angle);
+          const wing1Y = arrowEndY - headLength * Math.sin(angle) - headWidth * Math.cos(angle);
+          const wing2X = arrowEndX - headLength * Math.cos(angle) - headWidth * Math.sin(angle);
+          const wing2Y = arrowEndY - headLength * Math.sin(angle) + headWidth * Math.cos(angle);
 
-        // 2. High-Visibility Trajectory Vector Line (Dual/Triple Pass)
-        // Pass A: Dark outline backing for maximum isolation from bright stars/dust
-        ctx.beginPath();
-        ctx.moveTo(starPosX, starPosY);
-        ctx.lineTo(arrowEndX, arrowEndY);
-        ctx.strokeStyle = backingColor;
-        ctx.lineWidth = 5.5 / zoom;
-        ctx.lineCap = 'round';
-        ctx.stroke();
+          ctx.beginPath();
+          ctx.moveTo(arrowEndX, arrowEndY);
+          ctx.lineTo(wing1X, wing1Y);
+          ctx.lineTo(wing2X, wing2Y);
+          ctx.closePath();
+          ctx.fillStyle = arrowColor;
+          ctx.fill();
 
-        // Pass B: Luminous amber glow pass
-        ctx.shadowColor = glowColor;
-        ctx.shadowBlur = 10;
-        ctx.strokeStyle = strokeColor;
-        ctx.lineWidth = 3.2 / zoom;
-        ctx.stroke();
+          ctx.restore();
 
-        // Pass C: Bright center core line for laser-sharp precision
-        ctx.shadowBlur = 0;
-        ctx.strokeStyle = coreColor;
-        ctx.lineWidth = 1.4 / zoom;
-        ctx.stroke();
-
-        // 3. Directional Chevron Arrowhead
-        const tipX = arrowEndX;
-        const tipY = arrowEndY;
-        const wing1X = tipX - headLength * Math.cos(angle) + headWidth * Math.sin(angle);
-        const wing1Y = tipY - headLength * Math.sin(angle) - headWidth * Math.cos(angle);
-        const wing2X = tipX - headLength * Math.cos(angle) - headWidth * Math.sin(angle);
-        const wing2Y = tipY - headLength * Math.sin(angle) + headWidth * Math.cos(angle);
-
-        // Arrowhead outline & fill
-        ctx.beginPath();
-        ctx.moveTo(tipX, tipY);
-        ctx.lineTo(wing1X, wing1Y);
-        ctx.lineTo(wing2X, wing2Y);
-        ctx.closePath();
-
-        // Shadow / glow for arrowhead
-        ctx.shadowColor = glowColor;
-        ctx.shadowBlur = 10;
-        ctx.fillStyle = strokeColor;
-        ctx.fill();
-        ctx.shadowBlur = 0;
-        ctx.strokeStyle = backingColor;
-        ctx.lineWidth = 1.5 / zoom;
-        ctx.stroke();
-
-        // 4. Destination +5yr Target Ring
-        ctx.beginPath();
-        ctx.arc(arrowEndX, arrowEndY, 5 / zoom, 0, Math.PI * 2);
-        ctx.strokeStyle = coreColor;
-        ctx.lineWidth = 1.5 / zoom;
-        ctx.stroke();
-
-        // 5. Scientific Information Pill / Badge
-        const totalDrift5yr = (target.properMotion.totalArcsecPerYear * futureYears).toFixed(1);
-        const badgeLabel = `Gaia DR3 Drift (+5yr) • ${totalDrift5yr}"`;
-
-        const fontSize = 11 / zoom;
-        ctx.font = `600 ${fontSize}px ui-monospace, SFMono-Regular, Menlo, monospace`;
-        const textMetrics = ctx.measureText(badgeLabel);
-        const textWidth = textMetrics.width;
-        const padX = 7 / zoom;
-        const padY = 4 / zoom;
-        const badgeW = textWidth + padX * 2;
-        const badgeH = fontSize + padY * 2;
-
-        // Smart placement avoiding the line:
-        // If pointing to the left, position pill to the left; otherwise to the right
-        const placeLeft = Math.cos(angle) < -0.3;
-        const badgeX = placeLeft ? arrowEndX - badgeW - 12 / zoom : arrowEndX + 12 / zoom;
-        const badgeY = arrowEndY - badgeH / 2;
-
-        // Draw pill background with rounded corners
-        const radius = 4 / zoom;
-        ctx.beginPath();
-        if (ctx.roundRect) {
-          ctx.roundRect(badgeX, badgeY, badgeW, badgeH, radius);
-        } else {
-          ctx.rect(badgeX, badgeY, badgeW, badgeH);
+          // Stash data for 1:1 native screen-pixel text rendering (razor sharp at all zoom levels)
+          gaiaLabelData = {
+            tipX: arrowEndX,
+            tipY: arrowEndY,
+            angle,
+            totalDrift5yr: (target.properMotion.totalArcsecPerYear * futureYears).toFixed(1),
+          };
         }
-        ctx.fillStyle = textBgColor;
-        ctx.fill();
-        ctx.strokeStyle = textBorderColor;
-        ctx.lineWidth = 1 / zoom;
-        ctx.stroke();
-
-        // Little gold status indicator dot inside pill
-        ctx.beginPath();
-        ctx.arc(badgeX + padX + 2 / zoom, badgeY + badgeH / 2, 2.2 / zoom, 0, Math.PI * 2);
-        ctx.fillStyle = strokeColor;
-        ctx.fill();
-
-        // Pill text
-        ctx.fillStyle = textFillColor;
-        ctx.textBaseline = 'middle';
-        ctx.fillText(badgeLabel, badgeX + padX + 7 / zoom, badgeY + badgeH / 2 + 0.5 / zoom);
-
-        ctx.restore();
       }
     }
 
@@ -581,6 +507,50 @@ export const SkyCanvas: React.FC<SkyCanvasProps> = ({
     ctx.restore();
 
     ctx.restore(); // Restore unpanned, unzoomed HUD coordinates
+
+    // Gaia Proper Motion Drift Label (Rendered in unzoomed 1:1 screen pixels for razor-sharp, effortless readability)
+    if (showMotionVector && gaiaLabelData) {
+      const tipScreenX = canvas.width / 2 + pan.x + (gaiaLabelData.tipX - canvas.width / 2) * zoom;
+      const tipScreenY = canvas.height / 2 + pan.y + (gaiaLabelData.tipY - canvas.height / 2) * zoom;
+
+      // Only draw if within visible canvas area
+      if (
+        tipScreenX >= -150 && tipScreenX <= canvas.width + 150 &&
+        tipScreenY >= -50 && tipScreenY <= canvas.height + 50
+      ) {
+        ctx.save();
+        const labelText = `Gaia Drift (+5yr): ${gaiaLabelData.totalDrift5yr}"`;
+        ctx.font = 'bold 12px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+        const textWidth = ctx.measureText(labelText).width;
+        const padX = 8;
+        const padY = 5;
+        const badgeW = textWidth + padX * 2;
+        const badgeH = 14 + padY * 2;
+
+        const placeLeft = Math.cos(gaiaLabelData.angle) < -0.2;
+        const badgeX = placeLeft ? tipScreenX - badgeW - 10 : tipScreenX + 10;
+        const badgeY = tipScreenY - badgeH / 2;
+
+        // Clean backdrop pill
+        ctx.beginPath();
+        if (ctx.roundRect) {
+          ctx.roundRect(badgeX, badgeY, badgeW, badgeH, 5);
+        } else {
+          ctx.rect(badgeX, badgeY, badgeW, badgeH);
+        }
+        ctx.fillStyle = inverted ? 'rgba(255, 255, 255, 0.96)' : 'rgba(7, 10, 18, 0.94)';
+        ctx.fill();
+        ctx.strokeStyle = inverted ? '#c2410c' : '#f59e0b';
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+
+        // High-contrast, bold, crisp text
+        ctx.fillStyle = inverted ? '#7c2d12' : '#ffffff';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(labelText, badgeX + padX, badgeY + badgeH / 2);
+        ctx.restore();
+      }
+    }
 
     // Draw Crisp Angular Scale Bar on HUD (Top-Left)
     const scaleBarArcsec = requestedFovArcsec * 0.1; // 10% of field width
