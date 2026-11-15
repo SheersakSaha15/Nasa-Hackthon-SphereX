@@ -2,10 +2,16 @@
 
 > **A Public-Facing Time-Domain Sky Comparator & Spectroscopic Explorer for NASA's SPHEREx Mission**
 
+[![Live Web App](https://img.shields.io/badge/Live%20Demo-nasa--hackathon--spherex.vercel.app-06b6d4?style=for-the-badge&logo=vercel&logoColor=white)](https://nasa-hackathon-spherex.vercel.app/)
+[![GitHub Repo](https://img.shields.io/badge/GitHub-Repository-181717?style=for-the-badge&logo=github&logoColor=white)](https://github.com/SheersakSaha15/Nasa-Hackthon-SphereX)
+
 ![NASA Space Apps 2026](https://img.shields.io/badge/NASA%20Space%20Apps-2026-blue.svg)
 ![SPHEREx Mission](https://img.shields.io/badge/Mission-NASA%20SPHEREx-cyan.svg)
 ![Near-IR Bands](https://img.shields.io/badge/Bands-102%20Near--IR%20Channels-purple.svg)
 ![React + Vite + TypeScript](https://img.shields.io/badge/Built%20With-React%20%7C%20Vite%20%7C%20Tailwind-blue.svg)
+
+🌐 **Live Deployed Application:** [https://nasa-hackathon-spherex.vercel.app/](https://nasa-hackathon-spherex.vercel.app/)  
+📂 **Source Code Repository:** [https://github.com/SheersakSaha15/Nasa-Hackthon-SphereX](https://github.com/SheersakSaha15/Nasa-Hackthon-SphereX)
 
 ---
 
