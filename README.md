@@ -34,13 +34,13 @@ Because SPHEREx observes the same sky patches in 6-month cycles (Epochs), compar
 * Interactive playback controls: Play/Pause, Step Backward, Step Forward, and FPS slider (0.5 to 6.0 FPS).
 * Spacebar keyboard shortcut for instant play/pause.
 
-### 2. Difference Subtraction Mode ($E_2 - E_1$)
+### 2. Difference Subtraction Mode (Epoch 2 - Epoch 1)
 * Performs real-time pixel-level difference imaging directly in the browser.
 * Static background stars (millions of light-years away) cancel out into neutral grey.
 * Moving objects produce a signature **dipole** (black pit where the object was, white peak where it jumped to).
 * Variable stars appear as distinct bright or dark point sources.
 
-### 3. Co-addition Mode ($E_1 + E_2$)
+### 3. Co-addition Mode (Epoch 1 + Epoch 2)
 * Stacks multi-epoch observations to boost Signal-to-Noise Ratio (SNR) for faint, distant infrared targets.
 
 ### 4. Interactive Field of View (FOV) Slider
@@ -53,10 +53,10 @@ Because SPHEREx observes the same sky patches in 6-month cycles (Epochs), compar
 ### 5. On-the-Fly 102-Band Near-Infrared Spectrum (SED)
 * SPHEREx 102-channel flux curve from **0.75 µm to 5.0 µm**.
 * Automatic labeling of molecular ice and gas absorption bands:
-  * Water Ice ($H_2O$ at 3.0 µm)
-  * Carbon Dioxide Ice ($CO_2$ at 4.26 µm)
-  * Methane Gas ($CH_4$ at 1.66 µm & 3.3 µm)
-  * Carbon Monoxide ($CO$ at 2.3 µm & 4.67 µm)
+  * Water Ice (H2O at 3.0 µm)
+  * Carbon Dioxide Ice (CO2 at 4.26 µm)
+  * Methane Gas (CH4 at 1.66 µm & 3.3 µm)
+  * Carbon Monoxide (CO at 2.3 µm & 4.67 µm)
 
 ### 6. Official NASA Benchmark Targets (One-Click Presets)
 Pre-configured with accurate physical parameters and coordinates:
