@@ -431,28 +431,20 @@ export const SkyCanvas: React.FC<SkyCanvasProps> = ({
 
         if (vectorLength > 1) {
           const angle = Math.atan2(dy, dx);
-          const lineColor = inverted ? '#c2410c' : '#fbbf24';
 
           ctx.save();
-
-          // 1. Subtle dark contrast underlay so the line stands out clearly against bright stars or dark void
+          // Simple, single vibrant 2D line
           ctx.beginPath();
           ctx.moveTo(starPosX, starPosY);
           ctx.lineTo(arrowEndX, arrowEndY);
-          ctx.strokeStyle = inverted ? 'rgba(255, 255, 255, 0.65)' : 'rgba(0, 0, 0, 0.75)';
-          ctx.lineWidth = 4 / zoom;
+          ctx.strokeStyle = inverted ? '#ea580c' : '#facc15';
+          ctx.lineWidth = 2.5 / zoom;
           ctx.lineCap = 'round';
+          if (!inverted) {
+            ctx.shadowColor = '#facc15';
+            ctx.shadowBlur = 6;
+          }
           ctx.stroke();
-
-          // 2. Clean, highly visible line
-          ctx.beginPath();
-          ctx.moveTo(starPosX, starPosY);
-          ctx.lineTo(arrowEndX, arrowEndY);
-          ctx.strokeStyle = lineColor;
-          ctx.lineWidth = 2.2 / zoom;
-          ctx.lineCap = 'round';
-          ctx.stroke();
-
           ctx.restore();
 
           // Stash data for 1:1 native screen-pixel text rendering (razor sharp at all zoom levels)
@@ -507,32 +499,23 @@ export const SkyCanvas: React.FC<SkyCanvasProps> = ({
         const labelText = `Gaia Drift (+5yr): ${gaiaLabelData.totalDrift5yr}"`;
         ctx.font = 'bold 12px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
         const textWidth = ctx.measureText(labelText).width;
-        const padX = 8;
-        const padY = 5;
-        const badgeW = textWidth + padX * 2;
-        const badgeH = 14 + padY * 2;
 
         const placeLeft = Math.cos(gaiaLabelData.angle) < -0.2;
-        const badgeX = placeLeft ? tipScreenX - badgeW - 10 : tipScreenX + 10;
-        const badgeY = tipScreenY - badgeH / 2;
+        const textX = placeLeft ? tipScreenX - textWidth - 8 : tipScreenX + 8;
+        const textY = tipScreenY;
 
-        // Clean backdrop pill
-        ctx.beginPath();
-        if (ctx.roundRect) {
-          ctx.roundRect(badgeX, badgeY, badgeW, badgeH, 5);
-        } else {
-          ctx.rect(badgeX, badgeY, badgeW, badgeH);
-        }
-        ctx.fillStyle = inverted ? 'rgba(255, 255, 255, 0.96)' : 'rgba(7, 10, 18, 0.94)';
-        ctx.fill();
-        ctx.strokeStyle = inverted ? '#c2410c' : '#f59e0b';
-        ctx.lineWidth = 1.5;
-        ctx.stroke();
-
-        // High-contrast, bold, crisp text
-        ctx.fillStyle = inverted ? '#7c2d12' : '#ffffff';
         ctx.textBaseline = 'middle';
-        ctx.fillText(labelText, badgeX + padX, badgeY + badgeH / 2);
+
+        // 1. Crisp dark contrast halo (ensures 100% legibility over any star field or nebula without a box)
+        ctx.strokeStyle = inverted ? 'rgba(255, 255, 255, 0.95)' : 'rgba(0, 0, 0, 0.95)';
+        ctx.lineWidth = 3.5;
+        ctx.lineJoin = 'round';
+        ctx.strokeText(labelText, textX, textY);
+
+        // 2. Vibrant text fill
+        ctx.fillStyle = inverted ? '#c2410c' : '#fef08a';
+        ctx.fillText(labelText, textX, textY);
+
         ctx.restore();
       }
     }
